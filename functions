@@ -1,0 +1,59 @@
+# SSH certificate functions
+#
+
+# Functioins and aliases for the CA function.
+public_key = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJvmb+j8SP0T6DtWBWy1XjBWkjuQofOUfl2vuI+WNui0 CA key for dehnert.com'
+
+# Sign a ed25519 host key
+function CA-Host () {
+  if [[ $# != 1 ]] ; then
+    echo "Usage: $0 hostname"
+    exit 1
+  fi
+  ssh-keygen -s dehnert-com-ca -h -n "${1}".dehnert.com -V +52w -I "${1}".dehnert.com-key ssh_host_ed25519_key.pub
+}
+
+# Sign an rsa host key
+function CA-Host () {
+  if [[ $# != 1 ]] ; then
+    echo "Usage: $0 hostname"
+    exit 1
+  fi
+  ssh-keygen -s dehnert-com-ca -h -n "${1}".dehnert.com -V +52w -I "${1}".dehnert.com-key ssh_host_rsa.pub
+}
+
+# Sign an ed2559 user key
+function CA-user () {
+  if [[ $# != 1 ]] ; then
+    echo "Usage: $0 username"
+    exit 1
+  fi
+  ssh-keygen -s dehnert-com-ca -n "${1}" -V +52w -I dehnert.com-"${1}" id_ed25519.pub
+}
+
+# Sign an rsa user key
+function CA-user-rsa () {
+  if [[ $# != 1 ]] ; then
+    echo "Usage: $0 username"
+    exit 1
+  fi
+  ssh-keygen -s dehnert-com-ca -n "${1}" -V +52w -I dehnert.com-"${1}" id_rda.pub
+}
+
+# Add "HostCertificate" to sshd config file
+function HostCert () {
+  echo "HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub" >> /etc/ssh/sshd_config
+}
+
+# Add line to users knoiwn_host
+# contents-of-public-key-file is literally the public key in your signing key pair.
+function knownhosts () {
+  if [[ $# != 1 ]] ; then
+    echo "Usage: $0 username"
+    exit 1
+  fi
+  cp  ~"${1}"/.ssh/known_hosts ~"${1}"/.ssh/known_hosts.tmp
+  echo "@cert-authority *.dehnert.com ${public_key}" > ~"${1}"/.ssh/known_hosts
+  cat ~"${1}"/.ssh/known_hosts.tmp >> ~"${1}"/.ssh/known_hosts
+  rm ~"${1}"/.ssh/known_hosts.tmp
+}
